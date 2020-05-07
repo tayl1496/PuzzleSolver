@@ -5,10 +5,13 @@
  */
 package puzzlesolver.Maze;
 
+import Framework.PuzzleInterface;
+import Framework.Vertex;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
-import puzzlesolver.PuzzleInterface;
+import puzzlesolver.PuzzleSolver;
 import puzzlesolver.Util.AlgType;
 
 /**
@@ -17,14 +20,15 @@ import puzzlesolver.Util.AlgType;
  */
 public class Maze extends Pane implements PuzzleInterface {
     public int wCell, hCell, height, width, offSet;
-    private ArrayList<ArrayList<CellStates>> cellStateList;
+    private ArrayList<ArrayList<Cell>> CellList;
+    private Cell start, end;
     
     public Maze(int width,int height) {
         offSet = Cell.DIM_OF_CELL;
-        this.width = width * offSet;
-        this.height = height * offSet;
-        this.wCell = width;
-        this.hCell = height;
+        this.width = width * offSet;    //width in pixels for the Maze Pane
+        this.height = height * offSet;  //height in pixels for the Maze Pane
+        this.wCell = width;             //width in number of cells
+        this.hCell = height;            //height in number of cells
         
         initList();
         
@@ -33,72 +37,52 @@ public class Maze extends Pane implements PuzzleInterface {
     }
     
     private void initList() {
-        cellStateList = new ArrayList<>();
-        cellStateList.ensureCapacity(height);
+        CellList = new ArrayList<>();
+        CellList.ensureCapacity(height);
         for (int i = 0; i < height; ++i) {
-            cellStateList.add(new ArrayList<>());
+            CellList.add(new ArrayList<>());
         }
     }
     
     private void clearGrid() {
         super.getChildren().clear();
-        cellStateList.clear();
-        initList();
         for(int r = 0; r < hCell; r++) {
             for (int c = 0; c < wCell; c++) {
-                addCelltoPane(new Cell(Color.WHITE),r , c);
+                addCelltoPane(new Cell(CellList, Vertex.Status.OPEN, c, r));
             }
         }
     }
     
-    private void createMazeArray(Location start, Location end,int scale) {
+    private void createMazeArray(Cell start, Cell end,int scale) {
         for (int r = 0; r < hCell; ++r) {
             for (int c = 0; c < wCell; ++c) {
                 if((Math.random() * 100) < scale){
-                    cellStateList.get(c).add(CellStates.WALL);
+                    CellList.get(c).add(new Cell(CellList, Vertex.Status.BLOCKED, c, r));
                 } else {
-                    cellStateList.get(c).add(CellStates.OPEN);
+                    CellList.get(c).add(new Cell(CellList, Vertex.Status.OPEN, c, r));
                 }
             }
         }
-        cellStateList.get(start.x).set(start.y,CellStates.START);
-        cellStateList.get(end.x - 1).set(end.y - 1,CellStates.END);
+        for (int r = 0; r < hCell; ++r) {
+            CellList.get(r).get(0).setStatus(Vertex.Status.BLOCKED);
+            CellList.get(r).get(hCell-1).setStatus(Vertex.Status.BLOCKED);
+        }
+        for (int c = 0; c < wCell; ++c) {
+            CellList.get(0).get(c).setStatus(Vertex.Status.BLOCKED);
+            CellList.get(wCell-1).get(c).setStatus(Vertex.Status.BLOCKED);
+        }
+        CellList.get(start.getLocX()).set(start.getLocY(),start);
+        CellList.get(end.getLocX()).set(end.getLocY(), end);
     }
     
     private void displayMazeArray() {
+        clearGrid();
         for (int r = 0; r < hCell; ++r) {
             for (int c = 0; c < wCell; ++c) {
-                switch (cellStateList.get(c).get(r)) {
-                    case START:
-                        addCell(c * offSet, r * offSet,Color.CRIMSON);
-                        break;
-                    case END:
-                        addCell(c * offSet, r * offSet,Color.CHARTREUSE);
-                        break;
-                    case WALL:
-                        addCell(c * offSet, r * offSet,Color.BLACK);
-                        break;
-                    case OPEN:
-                        addCell(c * offSet, r * offSet,Color.WHITE);
-                        break;
-                    case ON_PATH:
-                        addCell(c * offSet, r * offSet,Color.CORNFLOWERBLUE);
-                        break;
-                    case VISITED:
-                        addCell(c * offSet, r * offSet,Color.DARKTURQUOISE);
-                        break;
-                    default:
-                        System.out.println("A Cell State Was Not Implimented");
-                }
+                super.getChildren().add(CellList.get(c).get(r));
             }
         }
     }
-    private void addCell(int x, int y, Color col) {
-        Cell newCell = new Cell(col);
-        newCell.relocate(x, y);
-        super.getChildren().add(newCell);
-    }
-    
     
     @Override
     public int getPuzHeight() {
@@ -108,55 +92,59 @@ public class Maze extends Pane implements PuzzleInterface {
     @Override
     public void Generate(int scale) {
         clearGrid();
-        createMazeArray(new Location(0,0), new Location(wCell,hCell), scale);
+        initList();
+        start = new Cell(CellList, Vertex.Status.START,1,1);
+        end = new Cell(CellList, Vertex.Status.END,wCell - 2, hCell - 2);
+        createMazeArray(start, end, scale);
         displayMazeArray();
     }
 
     @Override
-    public boolean Solve(AlgType algType) {
-        clearGrid();
-        System.out.println("Im trying to solve a maze");
-        return false;    
+    public void Solve(AlgType algType, boolean showSteps) {
+        PuzzleSolver solver = new PuzzleSolver(this, start);
+        if (solver.solveUsing(algType, showSteps) != Collections.EMPTY_LIST) {
+            System.out.println("There is a Solution who Knows if you want it.");
+            displayMazeArray();
+        } else {
+            System.out.println("The Solution List is EMPTY! I can't use this.");
+        }
     }
     
-    /**
-     * Gets the Valid Set of neighbors to a cell
-     * @param x
-     * @param y
-     * @return 
-     */
-    private ArrayList<Location> getValidLocalList(int x, int y) {
-        ArrayList<Location> localList = new ArrayList<>();
-        
-       
-        return localList;
+    @Override
+    public  PuzzleInterface.VertList getPuzzleVerts(){
+        List<Vertex> list = new ArrayList<>();
+        for (int r = 0; r < hCell; ++r) {
+            for (int c = 0; c < wCell; ++c) {
+                list.add(CellList.get(c).get(r));
+            }
+        }
+        return new PuzzleInterface.VertList(list, wCell);
     }
     
-    private void addCelltoPane(Cell cell, int r, int c) {
-        cell.relocate(c*offSet, r*offSet);
+    private void addCelltoPane(Cell cell) {
+        cell.relocate(cell.getLocX()*offSet, cell.getLocY()*offSet);
         super.getChildren().add(cell);
     }
 
-    public class Location {
-        
-        private int x, y;
-        
-        Location (int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
+    public int getWCell() {
+        return wCell;
+    }
 
-        public int getX() {
-            return x;
-        }
-        public void setX(int x) {
-            this.x = x;
-        }
-        public int getY() {
-            return y;
-        }
-        public void setY(int y) {
-            this.y = y;
-        }
-    } 
+    public int getHCell() {
+        return hCell;
+    }
+
+    public Cell getStart() {
+        return start;
+    }
+
+    public Cell getEnd() {
+        return end;
+    }
+
+    public ArrayList<ArrayList<Cell>> getCellList() {
+        return CellList;
+    }
+
+    
 }

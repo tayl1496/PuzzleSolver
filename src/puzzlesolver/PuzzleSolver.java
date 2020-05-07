@@ -5,38 +5,88 @@
  */
 package puzzlesolver;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.layout.HBox;
-import javafx.stage.Stage;
-import puzzlesolver.Maze.Maze;
-import puzzlesolver.Util.Settings;
+import Framework.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Stack;
+import puzzlesolver.Util.AlgType;
 
 /**
  *
  * @author Sam
  */
-public class PuzzleSolver extends Application {
+public class PuzzleSolver {
     
-    @Override
-    public void start(Stage primaryStage) {
-        HBox root = new HBox();
-        
-        Maze puzzle = new Maze(50,50);
-        Settings settings = new Settings("This Is the puzzle Solver",puzzle);
-        
-        root.getChildren().addAll(settings,puzzle);
-        Scene scene = new Scene(root);
-        primaryStage.setTitle("Puzzle Solver");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+    private final  PuzzleInterface puzzle;
+    private final  Vertex start;
+    private final Stack<Vertex> stack;
+    private final List<Vertex> path;
+    private boolean showSteps;
+    
+    public PuzzleSolver(PuzzleInterface puzzle, Vertex start) {
+        path = new ArrayList<>();
+        stack = new Stack<>();
+        this.puzzle = puzzle;
+        this.start = start;
+        showSteps = false;
+    }
+    
+    
+    public List<Vertex> solveUsing(AlgType alg, boolean showSteps) {
+        this.showSteps = showSteps;
+        switch(alg) {
+            case BREADTH_FIRST:
+                return Collections.EMPTY_LIST;
+            case DEPTH_FIRST:
+                return depthFirst();
+            case DIJKSTRA:
+                return Collections.EMPTY_LIST;
+            case ASTAR:
+                return Collections.EMPTY_LIST;
+            case TURN_LEFT:
+                return Collections.EMPTY_LIST;
+            default:
+                System.out.println("Error: Algorithm Not Found - FileName: MazeSolver");
+        }
+        return Collections.EMPTY_LIST;
     }
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        launch(args);
+    private List<Vertex> depthFirst() {
+        path.add(start);
+        addNeighborsToStack(start);
+        if (DFS(stack.pop())) {
+            return path;
+        } else {
+            return Collections.EMPTY_LIST;
+        }
     }
-    
+
+    private boolean DFS(Vertex vert) {
+        if (vert.getStatus() == Vertex.Status.END) {
+            return true;
+        } else {
+            vert.setStatus(Vertex.Status.ON_PATH);
+            path.add(vert);
+        } 
+        addNeighborsToStack(vert);
+        if (stack.isEmpty()) {
+            return false;
+        }
+        return DFS(stack.pop());
+    }
+
+    private void addNeighborsToStack(Vertex vert) {
+        vert.getNeighbors().forEach((v) -> { 
+            if (v.getStatus() == Vertex.Status.OPEN || v.getStatus() == Vertex.Status.END) {
+                 stack.push(v);
+            }
+        });
+    }
+
+    private void displayStack() {
+        stack.forEach((v) -> {
+        System.out.println(v.getStatus());
+        });
+    }
 }
